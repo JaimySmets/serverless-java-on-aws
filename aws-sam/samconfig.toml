@@ -1,0 +1,13 @@
+version = 0.1
+[default]
+
+[default.deploy]
+
+[default.deploy.parameters]
+stack_name = "serverless-java"
+s3_prefix = "serverless-java"
+region = "eu-central-1"
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM"
+image_repositories = []
+resolve_s3 = true
+confirm_changeset = true

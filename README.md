@@ -1,7 +1,9 @@
 # Serverless Java on AWS
 
+### Overview
+
 This repository shows a small application using several AWS components with a serverless deployment model.
-It is a (very) simplified file management solution. An Angular application uploads files to object storage (S3) and retrieves metadata from REST APIs (AWS Lambda). The backing data is stored in DynamoDB.
+It is a (very) simplified file management application. An Angular application uploads files to object storage (S3) and retrieves metadata from REST APIs (AWS Lambda). The backing data is stored in DynamoDB.
 
 The following diagram shows some of the components that are used:
 
@@ -11,16 +13,34 @@ The project consists of:
  * `quarkus-app`: Quarkus on AWS Lambda
    * `serverless-java-rest-api` uses [quarkus-amazon-lambda-http](https://quarkus.io/guides/aws-lambda-http) to start an embedded resteasy container.
    * `serverless-java-s3-trigger` uses [quarkus-amazon-lambda](https://quarkus.io/guides/aws-lambda) as a generic Lambda trigger.
-   * Both use [quarkus-amazon-dynamodb](https://docs.quarkiverse.io/quarkus-amazon-services/dev/amazon-dynamodb.html) to talk with a backing on-deman DynamoDB.
+   * Both use [quarkus-amazon-dynamodb](https://docs.quarkiverse.io/quarkus-amazon-services/dev/amazon-dynamodb.html) to talk with a backing on-demand DynamoDB.
  * `angular-app`: Angular with AWS Amplify
    * Contains a simple web application that can call the Lambda functions and the S3 Object storage.
  * `aws-sam`: AWS CloudFormation YAML files for deploying the necessary infrastructure.
 
-Since DynamoDB runs in provisioned mode and Lambdas terminate after execution, the running costs totals to 0€ for this demo (if you remain within the limits).
+Since DynamoDB runs in on-demand mode and Lambdas terminate right after execution, the running costs totals to 0€ for this demo (if you remain within reasonable limits).
 
 Some of the other supporting services are:
  * AWS CloudFormation: Allows definition of our AWS infrastructure as code.
+ * AWS CloudWatch: Automatically collects logs and monitoring metrics.
  * AWS IAM: Used for access management between our AWS Services (e.g. AWS Lambda -> DynamoDB).
  * API Gateway: Required to have HTTP requests invoke the backing Lambda trigger.
  * AWS CloudFront: CDN for the Angular application. Allows running HTTPS for a static webapp stored in S3.
  * AWS Cognito: User authentication and authorization used by both the Angular frontend and Quarkus REST API.
+
+### Local Environment Requirements
+ * [AWS CLI](https://aws.amazon.com/cli/): General AWS CLI
+ * [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html): Used to deploy our CloudFormation stack
+ * [Docker](https://www.docker.com/)/[Podman](https://podman.io/): Used for TestContainers by Quarkus (and/or building to native images)
+
+### Running locally
+
+Simply run the Quarkus apps through IntelliJ or through `mvnw quarkus:dev`.
+
+### Deploying to AWS
+
+1. First we build our quarkus applications to native images.  
+   `mvn clean install -Pnative -Dquarkus.native.container-build=true`  
+   The `quarkus.native.container-build` build flag is used on Windows to build the native Linux image inside a Docker container.
+2. Then we can deploy through AWS SAM.  
+   `sam deploy -t aws-sam/parent.sam.yaml`

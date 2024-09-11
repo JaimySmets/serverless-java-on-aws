@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: S3 DynamoDB Metadata REST API
+
+Parameters:
+  S3MetadataDynamoDbName:
+    Type: String
+
+Globals:
+  Api:
+    EndpointConfiguration: REGIONAL
+    BinaryMediaTypes:
+      - "*/*"
+
+Resources:
+  S3MetadataLambdaHttpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: not.used.in.provided.runtime
+      Runtime: provided.al2023
+      CodeUri: ../../quarkus-app/serverless-java-rest-api/target/function.zip
+      MemorySize: 128
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref S3MetadataDynamoDbName
+      Timeout: 15
+      Environment:
+        Variables:
+          SERVERLESS_JAVA_TABLE_NAME: !Ref S3MetadataDynamoDbName
+          DISABLE_SIGNAL_HANDLERS: true
+
+  S3MetadataLambdaHttpApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Description: API Gateway for the S3 Metadata http lambda
+      Name: s3-metadata-api-gateway
+      ProtocolType: HTTP
+      Target: !GetAtt S3MetadataLambdaHttpFunction.Arn
+
+  S3MetadataAPIInvokeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref S3MetadataLambdaHttpFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${S3MetadataLambdaHttpApiGateway}/$default/$default
+
+Outputs:
+  ServerlessJavaMetadataLambdaApi:
+    Description: API Gateway endpoint for the S3 Metadata API
+    Value: !Sub 'https://${S3MetadataLambdaHttpApiGateway}.execute-api.${AWS::Region}.amazonaws.com'
+    Export:
+      Name: ServerlessJavaMetadataLambdaApi

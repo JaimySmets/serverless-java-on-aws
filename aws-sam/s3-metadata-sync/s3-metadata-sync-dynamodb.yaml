@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  DynamoDB Config for file metadata
+
+Parameters:
+  TableName:
+    Type: String
+
+Resources:
+  ServerlessJavaMetadataTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      KeySchema:
+        - AttributeName: S3Key
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: S3Key
+          AttributeType: S
+      GlobalSecondaryIndexes: []
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST
+      TableClass: STANDARD_INFREQUENT_ACCESS
+    UpdateReplacePolicy: Retain
+    # You probably want "Retain" instead of "Delete" in a real scenario
+    DeletionPolicy: Delete
+
+Outputs:
+  Name:
+    Value: !Ref ServerlessJavaMetadataTable
+  Arn:
+    Value: !GetAtt
+      - ServerlessJavaMetadataTable
+      - Arn
+  Region:
+    Value: !Ref 'AWS::Region'

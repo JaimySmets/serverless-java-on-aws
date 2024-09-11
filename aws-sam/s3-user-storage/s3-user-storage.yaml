@@ -1,0 +1,100 @@
+Description: S3 bucket to store file content
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  BucketName:
+    Type: String
+  SyncTriggerArn:
+    Type: String
+  SyncTriggerName:
+    Type: String
+  SyncExecutionRole:
+    Type: String
+Outputs:
+  BucketName:
+    Description: Bucket name for the S3 bucket
+    Value: !Ref S3Bucket
+  Region:
+    Value: !Ref 'AWS::Region'
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref BucketName
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - HEAD
+              - PUT
+              - POST
+              - DELETE
+            AllowedOrigins:
+              - '*'
+            ExposedHeaders:
+              - x-amz-server-side-encryption
+              - x-amz-request-id
+              - x-amz-id-2
+              - ETag
+            Id: S3CORSRuleId1
+            MaxAge: 3000
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            Function: !Ref SyncTriggerArn
+          - Event: 's3:ObjectRemoved:*'
+            Function: !Ref SyncTriggerArn
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+    DependsOn:
+      - TriggerPermissions
+    UpdateReplacePolicy: Retain
+    # You probably want "Retain" instead of "Delete" in a real scenario
+    DeletionPolicy: Delete
+
+  TriggerPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref SyncTriggerName
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !Join
+        - ''
+        - - 'arn:aws:s3:::'
+          - !Ref BucketName
+
+  S3TriggerBucketPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:ListBucket'
+            Resource:
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref S3Bucket
+          - Effect: Allow
+            Action:
+              - 's3:PutObject'
+              - 's3:GetObject'
+              - 's3:ListBucket'
+              - 's3:DeleteObject'
+            Resource:
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref S3Bucket
+                  - /*
+      PolicyName: serverless-java-s3-storage-policy-trigger
+      Roles:
+        - !Ref SyncExecutionRole
+    DependsOn:
+      - S3Bucket

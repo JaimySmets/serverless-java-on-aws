@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SAM Template for Nested application resources
+Resources:
+  S3MetadataDynamodb:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: s3-metadata-sync/s3-metadata-sync-dynamodb.yaml
+      Parameters:
+        TableName: serverless-java-s3-metadata-table
+
+  S3MetadataSyncTrigger:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: s3-metadata-sync/s3-metadata-sync-trigger.yaml
+      Parameters:
+        S3MetadataDynamoDbArn: !GetAtt S3MetadataDynamodb.Outputs.Arn
+    DependsOn: S3MetadataDynamodb
+
+  S3MetadataApi:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: s3-metadata-sync/s3-metadata-rest-api.yaml
+      Parameters:
+        S3MetadataDynamoDbName: !GetAtt S3MetadataDynamodb.Outputs.Name
+    DependsOn:
+      - S3MetadataDynamodb
+
+  S3UserStorageBucket:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: s3-user-storage/s3-user-storage.yaml
+      Parameters:
+        SyncTriggerName: !GetAtt S3MetadataSyncTrigger.Outputs.FunctionName
+        SyncTriggerArn: !GetAtt S3MetadataSyncTrigger.Outputs.FunctionArn
+        SyncExecutionRole: !GetAtt S3MetadataSyncTrigger.Outputs.ExecutionRoleName
+        BucketName: serverless-java-s3-storage
+    DependsOn: S3MetadataSyncTrigger

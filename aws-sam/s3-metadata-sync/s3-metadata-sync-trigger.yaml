@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >-
+  SAM Template for creation of the S3 and Dynamodb metadata sync function.
+Parameters:
+  S3MetadataDynamoDbArn:
+    Type: String
+
+Resources:
+  S3DynamodbMetadataSyncFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: not.used.in.provided.runtime
+      Runtime: provided.al2023
+      CodeUri: ../../quarkus-app/serverless-java-s3-trigger/target/function.zip
+      MemorySize: 128
+      Timeout: 15
+      Role: !GetAtt
+        - S3DynamodbMetadataSyncExecutionRole
+        - Arn
+      Environment:
+        Variables:
+          DISABLE_SIGNAL_HANDLERS: true
+
+  S3DynamodbMetadataSyncExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: SJS3StorageSyncTriggerLambdaRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: SJDynamoDbUserMetadataAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:DeleteItem'
+                Resource: !Ref S3MetadataDynamoDbArn
+
+Outputs:
+  Region:
+    Value: !Ref 'AWS::Region'
+  FunctionName:
+    Value: !Ref S3DynamodbMetadataSyncFunction
+  FunctionArn:
+    Value: !GetAtt
+      - S3DynamodbMetadataSyncFunction
+      - Arn
+  ExecutionRoleName:
+    Value: !Ref S3DynamodbMetadataSyncExecutionRole
+  ExecutionRoleArn:
+    Value: !GetAtt
+      - S3DynamodbMetadataSyncExecutionRole
+      - Arn
