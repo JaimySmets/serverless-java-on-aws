@@ -1,0 +1,57 @@
+### GET through REST API
+GET http://localhost:8080/s3-metadata/files
+
+
+
+### POST through REST API
+POST http://localhost:8080/s3-metadata/files
+Content-Type: application/json
+
+{
+  "s3Key" : "/my-key/my-file.pdf",
+  "fileSize" : 200,
+  "eTag" :  "filetag"
+}
+
+### DELETE through REST API
+DELETE http://localhost:8080/s3-metadata/files/%2Fmy-key%2Fmy-file.pdf
+
+
+
+### Object created though Lambda S3 Trigger Event
+POST http://localhost:8081
+Content-Type: application/json
+
+{
+  "Records":[
+    {
+      "eventName": "ObjectCreated:Put",
+      "s3": {
+        "object": {
+          "key": "uploads/my-file.txt",
+          "size": 12345,
+          "eTag": "098f6bcd4621d373cade4e832627b4f6"
+        }
+      }
+    }
+  ]
+}
+
+### Object deleted though Lambda S3 Trigger Event
+POST http://localhost:8081
+Content-Type: application/json
+
+{
+  "Records":[
+    {
+      "eventName": "ObjectRemoved:Delete",
+      "s3": {
+        "object": {
+          "key": "uploads/my-file.txt",
+          "size": 12345,
+          "eTag": "098f6bcd4621d373cade4e832627b4f6"
+        }
+      }
+    }
+  ]
+}
