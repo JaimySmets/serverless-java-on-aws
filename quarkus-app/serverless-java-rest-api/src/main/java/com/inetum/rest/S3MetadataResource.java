@@ -2,13 +2,14 @@ package com.inetum.rest;
 
 import com.inetum.core.DynamoDbService;
 import com.inetum.core.S3FileMetadata;
+import io.quarkus.security.Authenticated;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
 import java.util.List;
 
-//@Authenticated -> quarkus-oidc allows using authenticated endpoints
+@Authenticated
 @RequestScoped
 @Path("/s3-metadata")
 public class S3MetadataResource {
@@ -32,16 +33,9 @@ public class S3MetadataResource {
         dynamoDbService.put(metadata);
     }
 
-    @GET
-    @Path("/files/{partitionKey}")
-    public FileMetadata listFileData(@PathParam("partitionKey") String partitionKey) {
-        S3FileMetadata s3FileMetadata = dynamoDbService.get(partitionKey);
-        return fileMetadataMapper.toDto(s3FileMetadata);
-    }
-
     @DELETE
-    @Path("/files/{partitionKey}")
-    public FileMetadata deleteFileData(@PathParam("partitionKey") String partitionKey) {
+    @Path("/files")
+    public FileMetadata deleteFileData(@QueryParam("partitionKey") String partitionKey) {
         S3FileMetadata s3FileMetadata = dynamoDbService.delete(partitionKey);
         return fileMetadataMapper.toDto(s3FileMetadata);
     }

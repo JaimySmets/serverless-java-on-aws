@@ -3,6 +3,8 @@ Transform: AWS::Serverless-2016-10-31
 Description: S3 DynamoDB Metadata REST API
 
 Parameters:
+  UserPoolId:
+    Type: String
   S3MetadataDynamoDbName:
     Type: String
 
@@ -16,7 +18,7 @@ Resources:
   S3MetadataLambdaHttpFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: not.used.in.provided.runtime
+      Handler: provided
       Runtime: provided.al2023
       CodeUri: ../../quarkus-app/serverless-java-rest-api/target/function.zip
       MemorySize: 128
@@ -26,7 +28,8 @@ Resources:
       Timeout: 15
       Environment:
         Variables:
-          SERVERLESS_JAVA_TABLE_NAME: !Ref S3MetadataDynamoDbName
+          SERVERLESS_JAVA_DYNAMODB_TABLE_NAME: !Ref S3MetadataDynamoDbName
+          QUARKUS_OIDC_AUTH_SERVER_URL: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPoolId}
           DISABLE_SIGNAL_HANDLERS: true
 
   S3MetadataLambdaHttpApiGateway:

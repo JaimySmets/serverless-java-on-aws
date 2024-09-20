@@ -3,6 +3,13 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   SAM Template for Nested application resources
 Resources:
+  Auth:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: cognito/cognito.yaml
+      Parameters:
+        ServerlessJavaCallbackUrl: 'http://localhost:4200/callback'
+
   S3MetadataDynamodb:
     Type: AWS::Serverless::Application
     Properties:
@@ -16,6 +23,7 @@ Resources:
       Location: s3-metadata-sync/s3-metadata-sync-trigger.yaml
       Parameters:
         S3MetadataDynamoDbArn: !GetAtt S3MetadataDynamodb.Outputs.Arn
+        S3MetadataDynamoDbName: !GetAtt S3MetadataDynamodb.Outputs.Name
     DependsOn: S3MetadataDynamodb
 
   S3MetadataApi:
@@ -24,8 +32,10 @@ Resources:
       Location: s3-metadata-sync/s3-metadata-rest-api.yaml
       Parameters:
         S3MetadataDynamoDbName: !GetAtt S3MetadataDynamodb.Outputs.Name
+        UserPoolId: !GetAtt Auth.Outputs.UserPoolId
     DependsOn:
       - S3MetadataDynamodb
+      - Auth
 
   S3UserStorageBucket:
     Type: AWS::Serverless::Application

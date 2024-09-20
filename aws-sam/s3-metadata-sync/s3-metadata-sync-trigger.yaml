@@ -5,12 +5,14 @@ Description: >-
 Parameters:
   S3MetadataDynamoDbArn:
     Type: String
+  S3MetadataDynamoDbName:
+    Type: String
 
 Resources:
   S3DynamodbMetadataSyncFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: not.used.in.provided.runtime
+      Handler: provided
       Runtime: provided.al2023
       CodeUri: ../../quarkus-app/serverless-java-s3-trigger/target/function.zip
       MemorySize: 128
@@ -20,6 +22,7 @@ Resources:
         - Arn
       Environment:
         Variables:
+          SERVERLESS_JAVA_DYNAMODB_TABLE_NAME: !Ref S3MetadataDynamoDbName
           DISABLE_SIGNAL_HANDLERS: true
 
   S3DynamodbMetadataSyncExecutionRole:

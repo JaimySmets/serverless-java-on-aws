@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SAM Template for auth resources
+
+Parameters:
+  ServerlessJavaCallbackUrl:
+    Type: String
+    Description: Callback URL of OAuth2 flow
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${AWS::StackName}-UserPool
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      UsernameConfiguration:
+        CaseSensitive: false
+    UpdateReplacePolicy: Retain
+    # You probably want "Retain" instead of "Delete" in a real scenario
+    DeletionPolicy: Delete
+
+  HostedUI:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: serverless-java
+      UserPoolId: !Ref UserPool
+
+  UserPoolClientWeb:
+    Type: 'AWS::Cognito::UserPoolClient'
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: serverless_java_app_client_web
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - openid
+        - email
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - !Ref ServerlessJavaCallbackUrl
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_CUSTOM_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      SupportedIdentityProviders:
+        - COGNITO
+    DependsOn:
+      - UserPool
+
+  UserPoolIDSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: /serverless-java/auth/user-pool-id
+      Value: !Ref UserPool
+
+Outputs:
+  UserPoolId:
+    Description: Id for the user pool
+    Value: !Ref UserPool
+  UserPoolArn:
+    Description: Arn for the user pool
+    Value: !GetAtt UserPool.Arn
+  AppClientIDWeb:
+    Description: The user pool app client id for web
+    Value: !Ref UserPoolClientWeb
